@@ -146,14 +146,22 @@ function state_manager:set_power(power)
   return events
 end
 
--- Set Fan Speed (5 levels)
+-- Set Fan Speed
 function state_manager:set_fan_speed(speed)
   if not state_manager.VALID_FAN_SPEEDS[speed] then
     return nil, "Invalid fan speed: " .. tostring(speed)
   end
 
   local events = {}
-  if self.acFanSpeed ~= speed then
+  local is_power_on = (self.powerCoolingMode == "on" or self.powerCoolingMode == "power")
+
+  -- 파워모드가 켜진 상태에서 사용자가 바람세기를 변경하면 파워모드 자동 해제
+  if is_power_on then
+    self.powerCoolingMode = "off"
+    table.insert(events, { capability = "powerCoolingMode", value = "off" })
+  end
+
+  if self.acFanSpeed ~= speed or #events > 0 then
     self.acFanSpeed = speed
     table.insert(events, { capability = "acFanSpeed", value = speed })
   end

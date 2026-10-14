@@ -15,6 +15,7 @@ attributes:
             - medium
             - high
             - natural
+            - power
           default: low
       additionalProperties: false
       required:
@@ -34,3 +35,4 @@ commands:
             - medium
             - high
             - natural
+            - power

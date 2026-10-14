@@ -1,0 +1,82 @@
+#
+# Custom capability presentation: AC Fan Speed
+# Must be created before a device can display the capability:
+#    smartthings capabilities:presentation:create forgottenpeace60271.acFanSpeed 1 -i ./capabilities/forgottenpeace60271.acFanSpeed.presentation.yaml
+#
+
+dashboard:
+  states:
+    - label: '{{acFanSpeed.value}}'
+      alternatives:
+        - key: whisper
+          value: 미약풍
+        - key: low
+          value: 약풍
+        - key: medium
+          value: 중풍
+        - key: high
+          value: 강풍
+        - key: natural
+          value: 자연풍
+  actions: []
+  basicPlus: []
+detailView:
+  - label: 바람 세기
+    displayType: list
+    list:
+      command:
+        name: setAcFanSpeed
+        argumentType: string
+      value: acFanSpeed.value
+      alternatives:
+        - key: whisper
+          value: 미약풍
+          type: active
+        - key: low
+          value: 약풍
+          type: active
+        - key: medium
+          value: 중풍
+          type: active
+        - key: high
+          value: 강풍
+          type: active
+        - key: natural
+          value: 자연풍
+          type: active
+automation:
+  conditions:
+    - label: 바람 세기
+      displayType: list
+      list:
+        value: acFanSpeed.value
+        alternatives:
+          - key: whisper
+            value: 미약풍
+          - key: low
+            value: 약풍
+          - key: medium
+            value: 중풍
+          - key: high
+            value: 강풍
+          - key: natural
+            value: 자연풍
+  actions:
+    - label: 바람 세기 설정
+      displayType: list
+      list:
+        command: setAcFanSpeed
+        argumentType: string
+        alternatives:
+          - key: whisper
+            value: 미약풍
+          - key: low
+            value: 약풍
+          - key: medium
+            value: 중풍
+          - key: high
+            value: 강풍
+          - key: natural
+            value: 자연풍
+id: forgottenpeace60271.acFanSpeed
+version: 1

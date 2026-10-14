@@ -14,8 +14,8 @@ dashboard:
   basicPlus: []
 detailView:
   - label: "파워 냉방"
-    displayType: toggleSwitch
-    toggleSwitch:
+    displayType: switch
+    switch:
       command:
         name: setPowerCoolingMode
         on: "on"

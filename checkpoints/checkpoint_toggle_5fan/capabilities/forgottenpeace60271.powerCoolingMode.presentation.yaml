@@ -1,0 +1,55 @@
+#
+# Custom capability presentation: Power Cooling Mode
+# Must be created before a device can display the capability:
+#    smartthings capabilities:presentation:create forgottenpeace60271.powerCoolingMode 1 -i ./capabilities/forgottenpeace60271.powerCoolingMode.presentation.yaml
+#
+
+dashboard:
+  states:
+    - label: '{{powerCoolingMode.value}}'
+      alternatives:
+        - key: normal
+          value: 일반 냉방
+        - key: power
+          value: 파워 냉방
+  actions: []
+  basicPlus: []
+detailView:
+  - label: 파워모드
+    displayType: list
+    list:
+      command:
+        name: setPowerCoolingMode
+        argumentType: string
+      value: powerCoolingMode.value
+      alternatives:
+        - key: normal
+          value: 일반 냉방
+          type: active
+        - key: power
+          value: 파워 냉방
+          type: active
+automation:
+  conditions:
+    - label: 파워모드
+      displayType: list
+      list:
+        value: powerCoolingMode.value
+        alternatives:
+          - key: normal
+            value: 일반 냉방
+          - key: power
+            value: 파워 냉방
+  actions:
+    - label: 파워모드 설정
+      displayType: list
+      list:
+        command: setPowerCoolingMode
+        argumentType: string
+        alternatives:
+          - key: normal
+            value: 일반 냉방
+          - key: power
+            value: 파워 냉방
+id: forgottenpeace60271.powerCoolingMode
+version: 1
