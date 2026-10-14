@@ -1,0 +1,20 @@
+tag: ko
+label: 파워 냉방
+attributes:
+  powerCoolingMode:
+    label: 파워 냉방
+    displayTemplate: '{{device.label}}의 {{attribute}}: {{value}}'
+    i18n:
+      value:
+        'on':
+          label: 켜짐
+        'off':
+          label: 꺼짐
+        power:
+          label: 켜짐
+        normal:
+          label: 꺼짐
+commands:
+  setPowerCoolingMode:
+    label: 파워 냉방 설정
+    arguments: {}

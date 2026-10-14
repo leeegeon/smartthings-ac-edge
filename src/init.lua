@@ -14,6 +14,7 @@ local socket = require("cosock.socket")
 local disco = require('disco')
 local lifecycles = require('lifecycles')
 local broadlink = require('broadlink')
+local ac_sub_driver = require('ac')
 
 
 -- Custom capabilities
@@ -22,6 +23,7 @@ local capability_learnCode = capabilities["forgottenpeace60271.learnCode"]
 
 -- file-scoped globals
 local virtual_remote_device_counter = 0
+local ac_device_counter = 0
 
 ---------------------------------------------------------------------------
 -- handlers ---------------------------------------------------------------
@@ -51,6 +53,30 @@ local function create_new_device(driver, parent_device_id, counter)
   assert (driver:try_create_device(create_device_msg), "failed to create virtual remote control device")
 end
 
+-- create a new "LG Air Conditioner" child device
+local function create_new_ac_device(driver, parent_device_id, counter)
+  local MFG_NAME = 'LG'
+  local VEND_LABEL = string.format('LG Air Conditioner #%d', counter)
+  local MODEL = 'MNQ0720C2S'
+  local ID = 'BroadlinkRM_AC_' .. socket.gettime()
+  local PROFILE = 'BroadlinkRM-AirConditioner.v2'
+
+  log.debug (string.format('Creating LG AC device: label=<%s>, id=<%s>', VEND_LABEL, ID))
+
+  local create_device_msg = {
+                              type = "LAN",
+                              parent_device_id = parent_device_id,
+                              device_network_id = ID,
+                              label = VEND_LABEL,
+                              profile = PROFILE,
+                              manufacturer = MFG_NAME,
+                              model = MODEL,
+                              vendor_provided_label = VEND_LABEL,
+                            }
+
+  assert (driver:try_create_device(create_device_msg), "failed to create LG AC device")
+end
+
 -- handler for all 'momentary' (button) capabilities
 local function handle_momentary_button(driver, st_device, command)
     log.info ('Entered handle_momentary_button() command='..st_utils.stringify_table(command, nil, nil))
@@ -72,6 +98,11 @@ local function handle_momentary_button(driver, st_device, command)
     if command.component == 'newVirtualRemoteDevice' then
       virtual_remote_device_counter = virtual_remote_device_counter + 1
       create_new_device(driver, st_device.id , virtual_remote_device_counter)
+    end
+
+    if command.component == 'newAirConditionerDevice' then
+      ac_device_counter = ac_device_counter + 1
+      create_new_ac_device(driver, st_device.id, ac_device_counter)
     end
 
 end
@@ -112,6 +143,9 @@ local driver =
     {
       discovery = disco.handle_discovery,
       lifecycle_handlers = lifecycles,
+      sub_drivers = {
+        ac_sub_driver,
+      },
       supported_capabilities = {
         capabilities.switch,
         -- capabilities.refresh

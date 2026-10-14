@@ -66,8 +66,36 @@ end
 -- discover and create new devices
 function disco.handle_discovery(driver, opts, cons)
     log.debug('disco.handle_discovery() entered')
-    disco.do_discover(driver, create_device)
-    log.debug('disco.start() exiting')
+    local discovered = disco.do_discover(driver, create_device)
+
+    -- Prototype fallback: If no Broadlink hardware is found on the LAN,
+    -- create a standalone LG Air Conditioner prototype device for UI testing in SmartThings app.
+    if discovered == nil then
+      local devices = driver:get_devices()
+      local has_ac_device = false
+      for _, dev in ipairs(devices) do
+        if dev.device_network_id and dev.device_network_id:find("^BroadlinkRM_AC") then
+          has_ac_device = true
+          break
+        end
+      end
+
+      if not has_ac_device then
+        log.info('Creating standalone LG AC prototype device for UI testing')
+        local metadata = {
+          type = "LAN",
+          device_network_id = "BroadlinkRM_AC_Prototype",
+          label = "LG 에어컨 (MNQ0720C2S)",
+          profile = "BroadlinkRM-AirConditioner.v2",
+          manufacturer = "LG",
+          model = "MNQ0720C2S",
+          vendor_provided_label = "LG AC MNQ0720C2S Prototype",
+        }
+        driver:try_create_device(metadata)
+      end
+    end
+
+    log.debug('disco.handle_discovery() exiting')
 end
 
 

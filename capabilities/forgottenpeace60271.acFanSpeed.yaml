@@ -1,0 +1,42 @@
+#
+# Custom capability definition: AC Fan Speed (5 levels)
+# Must be created before use by a device definition:
+#    smartthings capabilities:create -i ./capabilities/forgottenpeace60271.acFanSpeed.yaml
+#
+
+id: forgottenpeace60271.acFanSpeed
+version: 1
+status: proposed
+name: ac fan speed
+attributes:
+  acFanSpeed:
+    schema:
+      type: object
+      properties:
+        value:
+          type: string
+          enum:
+            - whisper
+            - low
+            - medium
+            - high
+            - natural
+          default: low
+      additionalProperties: false
+      required:
+        - value
+    enumCommands: []
+commands:
+  setAcFanSpeed:
+    name: setAcFanSpeed
+    arguments:
+      - name: acFanSpeed
+        optional: false
+        schema:
+          type: string
+          enum:
+            - whisper
+            - low
+            - medium
+            - high
+            - natural

@@ -14,6 +14,10 @@ components:
     capabilities:
       - id: momentary
         version: 1
+  - id: newAirConditionerDevice
+    capabilities:
+      - id: momentary
+        version: 1
 preferences:
   - title: "Remote code"
     name: remoteCode

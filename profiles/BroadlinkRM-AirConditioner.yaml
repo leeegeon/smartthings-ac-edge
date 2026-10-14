@@ -1,0 +1,43 @@
+name: BroadlinkRM-AirConditioner.v2
+metadata:
+  vid: d1a8d192-4ee0-3f1b-a044-02389b998b00
+  mnmn: SmartThingsCommunity
+components:
+  - id: main
+    capabilities:
+      - id: switch
+        version: 1
+      - id: thermostatCoolingSetpoint
+        version: 1
+        config:
+          values:
+            - key: "coolingSetpoint.value"
+              range: [18, 30]
+              step: 1
+      - id: optiontomorrow57882.acFanSpeed
+        version: 1
+      - id: fanOscillationMode
+        version: 1
+      - id: optiontomorrow57882.powerCoolingMode
+        version: 1
+    categories:
+      - name: AirConditioner
+preferences:
+  - title: "Min Temperature (°C)"
+    name: minTemp
+    description: "Minimum cooling setpoint (temporary: 18°C)"
+    required: false
+    preferenceType: integer
+    definition:
+      minimum: 16
+      maximum: 20
+      default: 18
+  - title: "Max Temperature (°C)"
+    name: maxTemp
+    description: "Maximum cooling setpoint (temporary: 30°C)"
+    required: false
+    preferenceType: integer
+    definition:
+      minimum: 28
+      maximum: 32
+      default: 30

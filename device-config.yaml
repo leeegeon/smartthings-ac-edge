@@ -1,0 +1,75 @@
+#
+# Device Configuration Presentation for LG Air Conditioner (BroadlinkRM-AirConditioner.v1)
+# Create with:
+#    smartthings presentation:device-config:create -i device-config.yaml
+#
+type: profile
+dashboard:
+  states:
+    - component: main
+      capability: switch
+      version: 1
+      values: []
+    - component: main
+      capability: thermostatCoolingSetpoint
+      version: 1
+      values: []
+  actions:
+    - component: main
+      capability: switch
+      version: 1
+  basicPlus: []
+detailView:
+  - component: main
+    capability: switch
+    version: 1
+    values: []
+  - component: main
+    capability: thermostatCoolingSetpoint
+    version: 1
+    values: []
+  - component: main
+    capability: optiontomorrow57882.acFanSpeed
+    version: 1
+    values: []
+  - component: main
+    capability: fanOscillationMode
+    version: 1
+    values: []
+  - component: main
+    capability: optiontomorrow57882.powerCoolingMode
+    version: 1
+    values: []
+automation:
+  conditions:
+    - component: main
+      capability: switch
+      version: 1
+    - component: main
+      capability: thermostatCoolingSetpoint
+      version: 1
+    - component: main
+      capability: optiontomorrow57882.acFanSpeed
+      version: 1
+    - component: main
+      capability: fanOscillationMode
+      version: 1
+    - component: main
+      capability: optiontomorrow57882.powerCoolingMode
+      version: 1
+  actions:
+    - component: main
+      capability: switch
+      version: 1
+    - component: main
+      capability: thermostatCoolingSetpoint
+      version: 1
+    - component: main
+      capability: optiontomorrow57882.acFanSpeed
+      version: 1
+    - component: main
+      capability: fanOscillationMode
+      version: 1
+    - component: main
+      capability: optiontomorrow57882.powerCoolingMode
+      version: 1

@@ -12,8 +12,8 @@ local lifecycle_handler = {}
 function lifecycle_handler.init(driver, device)
   log.info('lifecycle_handler.init() entered for device with device_network_id='..device.device_network_id)
 
-  if device.device_network_id:find("^BroadlinkRM_Virtual") then
-    -- this is a virtual remote control device, no init needed
+  if device.device_network_id:find("^BroadlinkRM_Virtual") or device.device_network_id:find("^BroadlinkRM_AC") then
+    -- this is a virtual remote or AC device, no Broadlink LAN init needed
     log.info('lifecycle_handler.init() exiting')
     return
   end

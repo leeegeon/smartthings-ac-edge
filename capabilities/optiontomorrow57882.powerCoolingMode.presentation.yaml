@@ -1,0 +1,71 @@
+dashboard:
+  states:
+    - label: '{{powerCoolingMode.value}}'
+      alternatives:
+        - key: "power"
+          value: "켜짐"
+        - key: "normal"
+          value: "꺼짐"
+        - key: "on"
+          value: "켜짐"
+        - key: "off"
+          value: "꺼짐"
+  actions: []
+  basicPlus: []
+detailView:
+  - label: "파워 냉방"
+    displayType: toggleSwitch
+    toggleSwitch:
+      command:
+        name: setPowerCoolingMode
+        on: "on"
+        off: "off"
+      state:
+        value: powerCoolingMode.value
+        on: "on"
+        off: "off"
+        label: '{{powerCoolingMode.value}}'
+        alternatives:
+          - key: "on"
+            value: "켜짐"
+            type: active
+          - key: "off"
+            value: "꺼짐"
+            type: inactive
+          - key: "power"
+            value: "켜짐"
+            type: active
+          - key: "normal"
+            value: "꺼짐"
+            type: inactive
+automation:
+  conditions:
+    - label: "파워 냉방"
+      displayType: list
+      list:
+        value: powerCoolingMode.value
+        alternatives:
+          - key: "power"
+            value: "켜짐"
+          - key: "normal"
+            value: "꺼짐"
+          - key: "on"
+            value: "켜짐"
+          - key: "off"
+            value: "꺼짐"
+  actions:
+    - label: "파워 냉방"
+      displayType: list
+      list:
+        command: setPowerCoolingMode
+        alternatives:
+          - key: "power"
+            value: "켜짐"
+          - key: "normal"
+            value: "꺼짐"
+          - key: "on"
+            value: "켜짐"
+          - key: "off"
+            value: "꺼짐"
+id: optiontomorrow57882.powerCoolingMode
+version: 1
