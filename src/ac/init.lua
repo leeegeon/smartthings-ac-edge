@@ -54,18 +54,59 @@ local function save_device_state(device, state)
   device:set_field("ac_state_data", state:get_state(), { persist = true })
 end
 
--- Find the Broadlink RM hardware device
-local function get_broadlink_device(driver, device)
-  local parent = device:get_parent_device()
-  if parent and parent:get_field("ip") then
-    return parent
+-- Check if a device is the Broadlink hardware bridge
+local function is_broadlink_device(dev)
+  if not dev then return false end
+  local dni = dev.device_network_id or ""
+  if dni:match("^%x%x:%x%x:%x%x:%x%x:%x%x:%x%x$") or dni:find("34:8e:89") then
+    return true
   end
-  for _, dev in ipairs(driver:get_devices()) do
-    if dev:get_field("ip") and dev:get_field("broadlink_encryption_key") then
-      return dev
+  if dev.model and (dev.model:find("^RM") or dev.model == "RM mini 3") then
+    return true
+  end
+  if dev.vendor_provided_label and dev.vendor_provided_label:find("^Broadlink IR Remote ") then
+    return true
+  end
+  return false
+end
+
+-- Find the Broadlink RM hardware device and ensure IP & auth are ready
+local function get_broadlink_device(driver, device)
+  local broadlink_dev = device:get_parent_device()
+  if not broadlink_dev or not is_broadlink_device(broadlink_dev) then
+    for _, dev in pairs(driver:get_devices()) do
+      if is_broadlink_device(dev) then
+        broadlink_dev = dev
+        break
+      end
     end
   end
-  return parent
+
+  if not broadlink_dev then
+    log.warn("[AC IR] No Broadlink hardware device found among registered devices")
+    return nil
+  end
+
+  -- Ensure IP is configured
+  local ip = broadlink_dev:get_field("ip")
+  if not ip or ip == "" then
+    ip = (driver._macaddr_to_ip and driver._macaddr_to_ip[broadlink_dev.device_network_id]) or "192.168.0.220"
+    log.info("[AC IR] Populating Broadlink device IP: " .. ip)
+    broadlink_dev:set_field("ip", ip, { persist = true })
+  end
+
+  if not broadlink_dev:get_field("broadlink_device_type") then
+    local dt = (driver._macaddr_to_device_type and driver._macaddr_to_device_type[broadlink_dev.device_network_id]) or 0x5f36
+    broadlink_dev:set_field("broadlink_device_type", dt, { persist = true })
+  end
+
+  -- Ensure authenticated
+  if not broadlink_dev:get_field("broadlink_encryption_key") then
+    log.info("[AC IR] Authenticating Broadlink device before transmission")
+    broadlink.auth(broadlink_dev)
+  end
+
+  return broadlink_dev
 end
 
 -- Transmit an IR command via Broadlink

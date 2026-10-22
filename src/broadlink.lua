@@ -138,6 +138,8 @@ function broadlink.broadcast_discovery()
     udp:settimeout(config.DISCOVER_TIMEOUT_SEC)
     log.info('Sending UDP broadcast to discover devices on network')
     udp:sendto(discover_packet, DISCOVER_ADDRESS, DISCOVER_PORT)
+    udp:sendto(discover_packet, '192.168.0.255', DISCOVER_PORT)
+    udp:sendto(discover_packet, '192.168.0.220', DISCOVER_PORT)
 
     local res, remote_ip = udp:receivefrom()
     udp:close()
@@ -362,16 +364,21 @@ function broadlink.auth(st_device)
     log.debug('auth(): packet='..printhex(auth_payload))
 
     local response = send_packet(0x65, auth_payload, st_device, Array.fromHex(config.encrypt_INIT_KEY))
+    if not response or #response < 0x39 then
+        log.warn('auth(): no valid response received from device')
+        return false
+    end
     local payload_enc = response:sub(0x39)
     log.debug('auth(): response payload encrypted='..printhex(payload_enc))
     local payload_plaintext = decrypt_payload(payload_enc, Array.fromHex(config.encrypt_INIT_KEY))
     log.debug('auth(): response payload decrypted='..printhex(payload_plaintext))
     local broadlink_device_id = string.unpack('<I4', payload_plaintext)
-    st_device:set_field("broadlink_device_id", broadlink_device_id)
+    st_device:set_field("broadlink_device_id", broadlink_device_id, { persist = true })
     log.debug('auth(): response broadlink_device_id='..broadlink_device_id)
     local broadlink_encryption_key = payload_plaintext:sub(0x05, 0x14)
-    st_device:set_field("broadlink_encryption_key", Array.fromString(broadlink_encryption_key))
+    st_device:set_field("broadlink_encryption_key", Array.fromString(broadlink_encryption_key), { persist = true })
     log.debug('auth(): response broadlink_encryption_key='..printhex(broadlink_encryption_key))
+    return true
 end
 
 return broadlink

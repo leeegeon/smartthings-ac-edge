@@ -28,11 +28,14 @@ function lifecycle_handler.init(driver, device)
     disco.do_discover(driver, nil)
   end
 
-  local device_ip = driver._macaddr_to_ip[device.device_network_id]
-  log.debug('using ip='..device_ip..' for device with macaddr='..device.device_network_id)
-  device:set_field("ip", device_ip)
-  local device_type = driver._macaddr_to_device_type[device.device_network_id]
-  device:set_field("broadlink_device_type", device_type)
+  local device_ip = driver._macaddr_to_ip[device.device_network_id] or device:get_field("ip")
+  if not device_ip or device_ip == "" then
+    device_ip = "192.168.0.220"
+  end
+  log.info('using ip='..tostring(device_ip)..' for device with macaddr='..device.device_network_id)
+  device:set_field("ip", device_ip, { persist = true })
+  local device_type = driver._macaddr_to_device_type[device.device_network_id] or device:get_field("broadlink_device_type") or 0x5f36
+  device:set_field("broadlink_device_type", device_type, { persist = true })
 
   broadlink.auth(device)
 
