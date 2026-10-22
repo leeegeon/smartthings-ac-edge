@@ -1,10 +1,12 @@
 -- src/ac/init.lua
 -- SmartThings Edge sub-driver for LG Air Conditioner MNQ0720C2S
--- Handles UI prototype capabilities without transmitting IR signals.
+-- Handles UI capabilities and transmits LG 28-bit IR commands via Broadlink.
 
 local log = require("log")
 local capabilities = require("st.capabilities")
 local state_manager = require("ac.state")
+local protocol = require("ac.protocol")
+local broadlink = require("broadlink")
 
 -- Custom capabilities
 local capability_powerCoolingMode = capabilities["optiontomorrow57882.powerCoolingMode"]
@@ -26,7 +28,6 @@ local function emit_ac_events(device, events)
       log.info(string.format("[AC UI] Emitting fanOscillationMode: %s", evt.value))
       device:emit_event(capabilities.fanOscillationMode.fanOscillationMode(evt.value))
     elseif evt.capability == "powerCoolingMode" and capability_powerCoolingMode then
-      -- toggleSwitch in device presentation maps on='on' / off='off'
       local pcm_val = (evt.value == "power" or evt.value == "on") and "on" or "off"
       log.info(string.format("[AC UI] Emitting powerCoolingMode: %s", pcm_val))
       device:emit_event(capability_powerCoolingMode.powerCoolingMode({ value = pcm_val }, { state_change = true }))
@@ -53,6 +54,57 @@ local function save_device_state(device, state)
   device:set_field("ac_state_data", state:get_state(), { persist = true })
 end
 
+-- Find the Broadlink RM hardware device
+local function get_broadlink_device(driver, device)
+  local parent = device:get_parent_device()
+  if parent and parent:get_field("ip") then
+    return parent
+  end
+  for _, dev in ipairs(driver:get_devices()) do
+    if dev:get_field("ip") and dev:get_field("broadlink_encryption_key") then
+      return dev
+    end
+  end
+  return parent
+end
+
+-- Transmit an IR command via Broadlink
+local function transmit_command(driver, device, hex_code)
+  local broadlink_dev = get_broadlink_device(driver, device)
+  if not broadlink_dev then
+    log.warn("[AC IR] Broadlink device not found; skipping IR transmission")
+    return false, "broadlink device not found"
+  end
+
+  local b64_code, err = protocol.encode_to_broadlink_code(hex_code)
+  if not b64_code then
+    log.error("[AC IR] Failed to encode hex code to Broadlink format: " .. tostring(err))
+    return false, err
+  end
+
+  log.info(string.format("[AC IR] Transmitting IR (hex=0x%s) to Broadlink: %s", hex_code, broadlink_dev.device_network_id))
+  broadlink.send_data(b64_code, broadlink_dev)
+  return true
+end
+
+-- Transmit current operating state (when power is ON)
+local function transmit_state(driver, device, state)
+  local cur = state:get_state()
+  if cur.power == "off" then
+    log.info("[AC IR] Power is OFF; skipping operational state transmission")
+    return
+  end
+
+  if cur.powerCoolingMode == "on" then
+    log.info("[AC IR] Power Cooling is ON; transmitting jet cool command")
+    transmit_command(driver, device, protocol.POWER_COOLING)
+    return
+  end
+
+  local hex_code = protocol.build_hex_code(cur.coolingSetpoint, cur.acFanSpeed, cur.fanOscillationMode)
+  transmit_command(driver, device, hex_code)
+end
+
 ---------------------------------------------------------------------------
 -- Capability Handlers
 
@@ -62,6 +114,7 @@ local function handle_switch_on(driver, device, command)
   local events = state:set_power("on")
   emit_ac_events(device, events)
   save_device_state(device, state)
+  transmit_state(driver, device, state)
 end
 
 local function handle_switch_off(driver, device, command)
@@ -70,6 +123,7 @@ local function handle_switch_off(driver, device, command)
   local events = state:set_power("off")
   emit_ac_events(device, events)
   save_device_state(device, state)
+  transmit_command(driver, device, protocol.POWER_OFF)
 end
 
 local function handle_set_cooling_setpoint(driver, device, command)
@@ -79,6 +133,7 @@ local function handle_set_cooling_setpoint(driver, device, command)
   local events = state:set_cooling_setpoint(target_temp)
   emit_ac_events(device, events)
   save_device_state(device, state)
+  transmit_state(driver, device, state)
 end
 
 local function handle_set_fan_oscillation_mode(driver, device, command)
@@ -88,6 +143,7 @@ local function handle_set_fan_oscillation_mode(driver, device, command)
   local events = state:set_oscillation_mode(mode)
   emit_ac_events(device, events)
   save_device_state(device, state)
+  transmit_state(driver, device, state)
 end
 
 local function handle_set_power_cooling_mode(driver, device, command)
@@ -97,6 +153,7 @@ local function handle_set_power_cooling_mode(driver, device, command)
   local events = state:set_power_cooling_mode(mode)
   emit_ac_events(device, events)
   save_device_state(device, state)
+  transmit_state(driver, device, state)
 end
 
 local function handle_set_ac_fan_speed(driver, device, command)
@@ -106,13 +163,13 @@ local function handle_set_ac_fan_speed(driver, device, command)
   local events = state:set_fan_speed(speed)
   emit_ac_events(device, events)
   save_device_state(device, state)
+  transmit_state(driver, device, state)
 end
 
 -- Fallback for standard airConditionerFanMode if used
 local function handle_set_fan_mode(driver, device, command)
   local mode = (type(command.args) == "table" and (command.args.fanMode or command.args[1])) or command.args
   log.info(string.format("[AC UI] handle_set_fan_mode (fallback): %s", tostring(mode)))
-  -- Map standard fanMode to custom fan speed where possible
   local map = {
     ["low"] = "low",
     ["medium"] = "medium",
@@ -127,6 +184,7 @@ local function handle_set_fan_mode(driver, device, command)
   emit_ac_events(device, events)
   device:emit_event(capabilities.airConditionerFanMode.fanMode(mode))
   save_device_state(device, state)
+  transmit_state(driver, device, state)
 end
 
 ---------------------------------------------------------------------------

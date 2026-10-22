@@ -19,6 +19,7 @@ function assert(condition, message) {
 console.log('=== 1. Checking Lua Syntax of all files in src/ ===');
 const luaFiles = [
   'src/ac/state.lua',
+  'src/ac/protocol.lua',
   'src/ac/init.lua',
   'src/init.lua',
   'src/lifecycles.lua',
@@ -170,4 +171,72 @@ console.log('  [PASS] Test 9: Oscillation modes verified (indirect, direct)');
 console.log('  [PASS] Test 10: Power switch state verified (on, off)');
 console.log('  [PASS] Test 11: Temperature bounds clamping verified (18C ~ 30C)');
 
+console.log('\n=== 3. Running Unit Tests on src/ac/protocol.lua in Fengari Lua VM ===');
+
+const protocolLuaCode = fs.readFileSync(path.join(REPO_ROOT, 'src/ac/protocol.lua'), 'utf8');
+const protocolTestScript = `
+local protocol = (function()
+${protocolLuaCode}
+end)()
+
+-- Test 1: Power OFF constant
+assert(protocol.POWER_OFF == "88C0051", "POWER_OFF should be 88C0051")
+
+-- Test 2: Jet Cool / Power Cooling constant
+assert(protocol.POWER_COOLING == "8810089", "POWER_COOLING should be 8810089")
+
+-- Test 3: Fan speed mapping against physical remote captures
+-- 25C Indirect Fan 1 -> 8808A13
+local c1 = protocol.build_hex_code(25, "whisper", "indirect")
+assert(c1 == "8808A13", "Expected 8808A13 for 25C indirect fan 1, got " .. tostring(c1))
+
+-- 25C Indirect Fan 2 -> 8808A02
+local c2 = protocol.build_hex_code(25, "low", "indirect")
+assert(c2 == "8808A02", "Expected 8808A02 for 25C indirect fan 2, got " .. tostring(c2))
+
+-- 25C Indirect Fan 3 -> 8808A24
+local c3 = protocol.build_hex_code(25, "medium", "indirect")
+assert(c3 == "8808A24", "Expected 8808A24 for 25C indirect fan 3, got " .. tostring(c3))
+
+-- 25C Indirect Fan 4 -> 8808A46
+local c4 = protocol.build_hex_code(25, "high", "indirect")
+assert(c4 == "8808A46", "Expected 8808A46 for 25C indirect fan 4, got " .. tostring(c4))
+
+-- 25C Indirect Natural (5단) -> 8808A57
+local c5 = protocol.build_hex_code(25, "natural", "indirect")
+assert(c5 == "8808A57", "Expected 8808A57 for 25C indirect natural, got " .. tostring(c5))
+
+-- 25C Direct Fan 4 -> 8800A4E
+local c6 = protocol.build_hex_code(25, "high", "direct")
+assert(c6 == "8800A4E", "Expected 8800A4E for 25C direct fan 4, got " .. tostring(c6))
+
+-- 18C Indirect Fan 1 -> 880831C ((8+8+0+8+3+1)%16 = 28%16 = 12 = C)
+local c7 = protocol.build_hex_code(18, "whisper", "indirect")
+assert(c7 == "880831C", "Expected 880831C for 18C indirect fan 1, got " .. tostring(c7))
+
+-- Test 4: Broadlink packet generation and base64 encoding
+local b64_off = protocol.encode_to_broadlink_code(protocol.POWER_OFF)
+assert(b64_off and b64_off:find("^base64:"), "Broadlink code should start with base64:")
+assert(#b64_off == 99, "Broadlink code should be 99 chars (base64: + 92 chars b64), got " .. #b64_off)
+
+return "PROTOCOL_TESTS_PASSED"
+`;
+
+const statusProto = lauxlib.luaL_dostring(L, fengari.to_luastring(protocolTestScript));
+if (statusProto !== lua.LUA_OK) {
+  const err = fengari.to_jsstring(lua.lua_tostring(L, -1));
+  console.error('[FAIL] Protocol Lua execution error:', err);
+  process.exit(1);
+}
+
+const resultProto = fengari.to_jsstring(lua.lua_tostring(L, -1));
+assert(resultProto === 'PROTOCOL_TESTS_PASSED', `Unexpected protocol test result: ${resultProto}`);
+
+console.log('  [PASS] Test 1: Power OFF frame verification (0x88C0051)');
+console.log('  [PASS] Test 2: Jet Cool frame verification (0x8810089)');
+console.log('  [PASS] Test 3: Fan speed 1~5 codes match physical captures (0x8808A13, 0x8808A02, 0x8808A24, 0x8808A46, 0x8808A57)');
+console.log('  [PASS] Test 4: Direct vs Indirect breeze toggle verification (0x8800A4E vs 0x8808A46)');
+console.log('  [PASS] Test 5: Broadlink IR packet structure & base64 encoding verified');
+
 console.log('\nAll Lua Syntax & Unit Tests Passed Successfully!');
+

@@ -29,6 +29,7 @@ local capability_learnCode = capabilities["forgottenpeace60271.learnCode"]
 -- @param  str string - bytes to show
 -- @return string - hex display of the str bytes
 local function printhex(str)
+    if not str then return "(nil)" end
     local hex='\n'
     for i=1,#str,1 do
         hex = hex .. string.format('%02x ', str:byte(i))
@@ -278,6 +279,10 @@ local function _send(command, data, st_device)
     -- packet = struct.pack("<HI", len(data) + 4, command) + data
     local packet = string.pack('<I2 I4', string.len(data) + 4, command)..data
     local resp = send_packet(0x6A, packet, st_device)
+    if not resp then
+        log.warn('_send(): no response received from Broadlink device (timeout)')
+        return "", "timeout"
+    end
 
     log.debug('_send(): response='..printhex(resp))
     local error_code = check_error(resp:sub(0x23, 0x24))
