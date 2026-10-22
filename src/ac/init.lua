@@ -103,6 +103,13 @@ local function transmit_state(driver, device, state)
 
   local hex_code = protocol.build_hex_code(cur.coolingSetpoint, cur.acFanSpeed, cur.fanOscillationMode)
   transmit_command(driver, device, hex_code)
+
+  -- When indirect breeze is active, transmit VANE_INDIRECT (0x881309D) to tilt flap up to ceiling
+  if cur.fanOscillationMode == "indirect" and device.thread then
+    device.thread:call_with_delay(1, function()
+      transmit_command(driver, device, protocol.VANE_INDIRECT)
+    end)
+  end
 end
 
 ---------------------------------------------------------------------------
@@ -115,6 +122,14 @@ local function handle_switch_on(driver, device, command)
   emit_ac_events(device, events)
   save_device_state(device, state)
   transmit_state(driver, device, state)
+
+  local cur = state:get_state()
+  if cur.fanOscillationMode == "indirect" and device.thread then
+    device.thread:call_with_delay(1, function()
+      log.info("[AC IR] Power ON with indirect mode active -> transmitting VANE_INDIRECT (0x881309D)")
+      transmit_command(driver, device, protocol.VANE_INDIRECT)
+    end)
+  end
 end
 
 local function handle_switch_off(driver, device, command)
@@ -143,7 +158,17 @@ local function handle_set_fan_oscillation_mode(driver, device, command)
   local events = state:set_oscillation_mode(mode)
   emit_ac_events(device, events)
   save_device_state(device, state)
-  transmit_state(driver, device, state)
+
+  local cur = state:get_state()
+  if cur.power ~= "off" then
+    if mode == "indirect" then
+      log.info("[AC IR] Setting fan oscillation to indirect -> transmitting VANE_INDIRECT (0x881309D)")
+      transmit_command(driver, device, protocol.VANE_INDIRECT)
+    else
+      log.info("[AC IR] Setting fan oscillation to direct -> transmitting VANE_DIRECT (0x8813048)")
+      transmit_command(driver, device, protocol.VANE_DIRECT)
+    end
+  end
 end
 
 local function handle_set_power_cooling_mode(driver, device, command)

@@ -8,7 +8,9 @@ local protocol = {}
 protocol.SIGNATURE = 0x88             -- First byte: LG manufacturer address
 protocol.POWER_OFF = "88C0051"        -- Dedicated Power OFF frame (checksum 1)
 protocol.POWER_COOLING = "8810089"    -- Dedicated Jet Cool / Power Cooling frame (checksum 9)
-protocol.OSCILLATION_TOGGLE = "8813048" -- Vane indirect/direct swing toggle (checksum 8)
+protocol.VANE_INDIRECT = "881309D"    -- Vane Highest / Indirect breeze / 천장각도 (checksum D)
+protocol.VANE_DIRECT   = "8813048"    -- Vane Lowest / Direct wind / 하향각도 (checksum 8)
+protocol.OSCILLATION_TOGGLE = "8813048" -- Legacy alias
 
 -- Fan speed nibble mapping (confirmed via physical remote captures)
 -- 1단 (미풍): 0x1
