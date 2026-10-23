@@ -128,7 +128,7 @@ local function transmit_command(driver, device, hex_code)
   return true
 end
 
--- Transmit current operating state (when power is ON)
+-- Transmit current operating state while the AC is running (single "change" frame)
 local function transmit_state(driver, device, state)
   local cur = state:get_state()
   if cur.power == "off" then
@@ -142,7 +142,7 @@ local function transmit_state(driver, device, state)
     return
   end
 
-  local hex_code = protocol.build_hex_code(cur.coolingSetpoint, cur.acFanSpeed, cur.fanOscillationMode)
+  local hex_code = protocol.build_hex_code(cur.coolingSetpoint, cur.acFanSpeed, protocol.FRAME_CHANGE)
   transmit_command(driver, device, hex_code)
 end
 
@@ -155,11 +155,26 @@ local function handle_switch_on(driver, device, command)
   local events = state:set_power("on")
   emit_ac_events(device, events)
   save_device_state(device, state)
-  transmit_state(driver, device, state)
 
+  -- 1) Power-on frame (N4 = 0). A change frame (N4 = 8) would only beep without powering on.
   local cur = state:get_state()
-  if cur.fanOscillationMode == "indirect" and device.thread then
-    device.thread:call_with_delay(1, function()
+  local hex_code = protocol.build_hex_code(cur.coolingSetpoint, cur.acFanSpeed, protocol.FRAME_POWER_ON)
+  log.info("[AC IR] Power ON -> transmitting power-on frame 0x" .. hex_code)
+  transmit_command(driver, device, hex_code)
+
+  -- 2) Optional follow-up frames that cannot be encoded in the power-on frame
+  if not device.thread then return end
+  local delay = 0
+  if cur.powerCoolingMode == "on" then
+    delay = delay + 1
+    device.thread:call_with_delay(delay, function()
+      log.info("[AC IR] Power ON with Power Cooling active -> transmitting POWER_COOLING (0x8810089)")
+      transmit_command(driver, device, protocol.POWER_COOLING)
+    end)
+  end
+  if cur.fanOscillationMode == "indirect" then
+    delay = delay + 1
+    device.thread:call_with_delay(delay, function()
       log.info("[AC IR] Power ON with indirect mode active -> transmitting VANE_INDIRECT (0x881309D)")
       transmit_command(driver, device, protocol.VANE_INDIRECT)
     end)

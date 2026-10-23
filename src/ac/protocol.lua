@@ -36,17 +36,26 @@ function protocol.calculate_checksum(n1, n2, n3, n4, n5, n6)
   return (n1 + n2 + n3 + n4 + n5 + n6) % 16
 end
 
+-- Frame types for the operating-state frame (N4 nibble)
+-- Confirmed via physical remote captures:
+--   Power ON from OFF (리모컨 전원 켜기)      -> 0x8800A4E (N4 = 0)
+--   Setting change while running (운전 중 변경) -> 0x8808Axx (N4 = 8)
+-- A "change" frame (N4 = 8) sent while the AC is OFF only beeps and does NOT power it on.
+-- Indirect/direct breeze is NOT encoded here; it is controlled by VANE_* frames.
+protocol.FRAME_POWER_ON = "power_on"
+protocol.FRAME_CHANGE   = "change"
+
 -- Construct 28-bit hex string for operating state
 -- @param temp number (18-30)
 -- @param fan_speed string ("whisper", "low", "medium", "high", "natural")
--- @param oscillation_mode string ("indirect", "direct")
+-- @param frame_type string (protocol.FRAME_POWER_ON or protocol.FRAME_CHANGE; default CHANGE)
 -- @return string 7-character hex code (e.g. "8808A13")
-function protocol.build_hex_code(temp, fan_speed, oscillation_mode)
+function protocol.build_hex_code(temp, fan_speed, frame_type)
   local n1 = 8
   local n2 = 8
   local n3 = 0
-  -- N4: 8 for indirect breeze (간접바람), 0 for direct (일반/직접풍)
-  local n4 = (oscillation_mode == "indirect") and 8 or 0
+  -- N4: 0 = power on from OFF, 8 = state change while already running
+  local n4 = (frame_type == protocol.FRAME_POWER_ON) and 0 or 8
 
   local temp_num = tonumber(temp) or 24
   if temp_num < protocol.MIN_TEMP then temp_num = protocol.MIN_TEMP end

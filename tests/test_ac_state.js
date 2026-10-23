@@ -185,34 +185,37 @@ assert(protocol.POWER_OFF == "88C0051", "POWER_OFF should be 88C0051")
 -- Test 2: Jet Cool / Power Cooling constant
 assert(protocol.POWER_COOLING == "8810089", "POWER_COOLING should be 8810089")
 
--- Test 3: Fan speed mapping against physical remote captures
--- 25C Indirect Fan 1 -> 8808A13
-local c1 = protocol.build_hex_code(25, "whisper", "indirect")
-assert(c1 == "8808A13", "Expected 8808A13 for 25C indirect fan 1, got " .. tostring(c1))
+-- Test 3: Fan speed mapping against physical remote captures (change frames while running)
+-- 25C Fan 1 -> 8808A13
+local c1 = protocol.build_hex_code(25, "whisper", protocol.FRAME_CHANGE)
+assert(c1 == "8808A13", "Expected 8808A13 for 25C fan 1, got " .. tostring(c1))
 
--- 25C Indirect Fan 2 -> 8808A02
-local c2 = protocol.build_hex_code(25, "low", "indirect")
-assert(c2 == "8808A02", "Expected 8808A02 for 25C indirect fan 2, got " .. tostring(c2))
+-- 25C Fan 2 -> 8808A02
+local c2 = protocol.build_hex_code(25, "low", protocol.FRAME_CHANGE)
+assert(c2 == "8808A02", "Expected 8808A02 for 25C fan 2, got " .. tostring(c2))
 
--- 25C Indirect Fan 3 -> 8808A24
-local c3 = protocol.build_hex_code(25, "medium", "indirect")
-assert(c3 == "8808A24", "Expected 8808A24 for 25C indirect fan 3, got " .. tostring(c3))
+-- 25C Fan 3 -> 8808A24
+local c3 = protocol.build_hex_code(25, "medium", protocol.FRAME_CHANGE)
+assert(c3 == "8808A24", "Expected 8808A24 for 25C fan 3, got " .. tostring(c3))
 
--- 25C Indirect Fan 4 -> 8808A46
-local c4 = protocol.build_hex_code(25, "high", "indirect")
-assert(c4 == "8808A46", "Expected 8808A46 for 25C indirect fan 4, got " .. tostring(c4))
+-- 25C Fan 4 -> 8808A46
+local c4 = protocol.build_hex_code(25, "high", protocol.FRAME_CHANGE)
+assert(c4 == "8808A46", "Expected 8808A46 for 25C fan 4, got " .. tostring(c4))
 
--- 25C Indirect Natural (5단) -> 8808A57
-local c5 = protocol.build_hex_code(25, "natural", "indirect")
-assert(c5 == "8808A57", "Expected 8808A57 for 25C indirect natural, got " .. tostring(c5))
+-- 25C Natural (5단) -> 8808A57
+local c5 = protocol.build_hex_code(25, "natural", protocol.FRAME_CHANGE)
+assert(c5 == "8808A57", "Expected 8808A57 for 25C natural, got " .. tostring(c5))
 
--- 25C Direct Fan 4 -> 8800A4E
-local c6 = protocol.build_hex_code(25, "high", "direct")
-assert(c6 == "8800A4E", "Expected 8800A4E for 25C direct fan 4, got " .. tostring(c6))
+-- Power ON capture from physical remote: 25C Fan 4 -> 8800A4E
+local c6 = protocol.build_hex_code(25, "high", protocol.FRAME_POWER_ON)
+assert(c6 == "8800A4E", "Expected 8800A4E for 25C power-on fan 4, got " .. tostring(c6))
 
--- 18C Indirect Fan 1 -> 880831C ((8+8+0+8+3+1)%16 = 28%16 = 12 = C)
-local c7 = protocol.build_hex_code(18, "whisper", "indirect")
-assert(c7 == "880831C", "Expected 880831C for 18C indirect fan 1, got " .. tostring(c7))
+-- Default frame type is CHANGE
+assert(protocol.build_hex_code(25, "high") == "8808A46", "Default frame type should be CHANGE")
+
+-- 18C Fan 1 change -> 880831C ((8+8+0+8+3+1)%16 = 28%16 = 12 = C)
+local c7 = protocol.build_hex_code(18, "whisper", protocol.FRAME_CHANGE)
+assert(c7 == "880831C", "Expected 880831C for 18C fan 1, got " .. tostring(c7))
 
 -- Test 4: Broadlink packet generation and base64 encoding
 local b64_off = protocol.encode_to_broadlink_code(protocol.POWER_OFF)
@@ -235,7 +238,7 @@ assert(resultProto === 'PROTOCOL_TESTS_PASSED', `Unexpected protocol test result
 console.log('  [PASS] Test 1: Power OFF frame verification (0x88C0051)');
 console.log('  [PASS] Test 2: Jet Cool frame verification (0x8810089)');
 console.log('  [PASS] Test 3: Fan speed 1~5 codes match physical captures (0x8808A13, 0x8808A02, 0x8808A24, 0x8808A46, 0x8808A57)');
-console.log('  [PASS] Test 4: Direct vs Indirect breeze toggle verification (0x8800A4E vs 0x8808A46)');
+console.log('  [PASS] Test 4: Power-on frame vs running change frame (0x8800A4E vs 0x8808A46)');
 console.log('  [PASS] Test 5: Broadlink IR packet structure & base64 encoding verified');
 
 console.log('\nAll Lua Syntax & Unit Tests Passed Successfully!');
