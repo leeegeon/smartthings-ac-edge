@@ -144,13 +144,6 @@ local function transmit_state(driver, device, state)
 
   local hex_code = protocol.build_hex_code(cur.coolingSetpoint, cur.acFanSpeed, cur.fanOscillationMode)
   transmit_command(driver, device, hex_code)
-
-  -- When indirect breeze is active, transmit VANE_INDIRECT (0x881309D) to tilt flap up to ceiling
-  if cur.fanOscillationMode == "indirect" and device.thread then
-    device.thread:call_with_delay(1, function()
-      transmit_command(driver, device, protocol.VANE_INDIRECT)
-    end)
-  end
 end
 
 ---------------------------------------------------------------------------
