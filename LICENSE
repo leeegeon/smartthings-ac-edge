@@ -1,6 +1,10 @@
 MIT License
 
 Copyright (c) 2023 Mark Frost
+Original repository: https://github.com/frostmar/smartthings-broadlink-edge
+
+Copyright (c) 2024-2026 smartthings-ac-edge contributors
+Modifications: LG Air Conditioner 28-bit IR protocol, SmartThings device profiles and custom capabilities.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

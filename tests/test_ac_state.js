@@ -1,10 +1,21 @@
 const fs = require('fs');
 const path = require('path');
 
-// Resolve packages from scratch node_modules
-const scratchModules = path.resolve('C:/Users/dave0/.gemini/antigravity-ide/brain/03860043-61ea-46d0-8b40-3ea2a7101e7c/scratch/node_modules');
-const luaparse = require(path.join(scratchModules, 'luaparse'));
-const fengari = require(path.join(scratchModules, 'fengari'));
+// Resolve packages: try standard require, then fallback to scratch node_modules if present
+let luaparse, fengari;
+try {
+  luaparse = require('luaparse');
+  fengari = require('fengari');
+} catch (e) {
+  const scratchModules = path.resolve('C:/Users/dave0/.gemini/antigravity-ide/brain/03860043-61ea-46d0-8b40-3ea2a7101e7c/scratch/node_modules');
+  if (fs.existsSync(scratchModules)) {
+    luaparse = require(path.join(scratchModules, 'luaparse'));
+    fengari = require(path.join(scratchModules, 'fengari'));
+  } else {
+    console.error('[WARN] luaparse or fengari not found. Install via: npm install luaparse fengari');
+    process.exit(1);
+  }
+}
 const { lua, lauxlib, lualib } = fengari;
 
 const REPO_ROOT = path.resolve(__dirname, '..');

@@ -1,6 +1,14 @@
 .vscode/
-docs/
-lua_libs-api_v2/
-*_private.md
+.idea/
+*.swp
 *.zip
 driver.zip
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+lua_libs-api_v2/
+checkpoints/
+*_private.md
